@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assessment Invitation</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      background-color: #f3f6fb;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #4a90e2, #0078d4);
+      color: white;
+      text-align: center;
+      padding: 25px 15px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .content {
+      padding: 30px;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .card {
+      background: #f8fbff;
+      border-left: 5px solid #0078d4;
+      padding: 18px 25px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+
+    .card p {
+      margin: 6px 0;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 14px 24px;
+      background-color: #0078d4;
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 16px;
+      text-align: center;
+      transition: background 0.3s ease;
+    }
+
+    .btn:hover {
+      background-color: #005fa3;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 13px;
+      color: #777;
+      padding: 20px;
+      border-top: 1px solid #eee;
+    }
+
+    .note {
+      background: #fdf8e4;
+      border: 1px solid #f1e1a6;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>You're Invited to an Assessment!</h1>
+    </div>
+
+    <div class="content">
+      <p>Hi <strong><%= candidateName %></strong>,</p>
+
+      <p>We’re excited to inform you that you’ve been selected to participate in the following assessment as part of our recruitment process. This is a great opportunity to demonstrate your skills and stand out!</p>
+
+      <div class="card">
+        <p><strong>Assessment Name:</strong> <%= assessmentName %></p>
+        <p><strong>Duration:</strong> <%= duration %> minutes</p>
+        <p><strong>Expiry Date:</strong> <%= expiryDate %></p>
+      </div>
+
+      <p>Please click the button below to start your assessment when you're ready:</p>
+
+      <p style="text-align: center; margin: 25px 0;">
+        <a href="<%= assessmentLink %>" class="btn">Start My Assessment</a>
+      </p>
+
+      <div class="note">
+        <strong>Note:</strong> Make sure you have a stable internet connection and complete the assessment in one sitting. Once started, you may not be able to pause or resume later.
+      </div>
+
+      <p style="margin-top: 25px;">If you face any issues accessing the assessment, please reach out to your HR or recruiter for assistance.</p>
+
+      <p>Best of luck! We’re looking forward to seeing your performance.</p>
+    </div>
+
+    <div class="footer">
+      <p>© <%= currentYear %> <strong>YourCompany</strong>. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

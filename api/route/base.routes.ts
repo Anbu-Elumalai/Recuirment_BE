@@ -1,0 +1,27 @@
+import { Application, Request, Response } from "express";
+import { _config } from "../../config/config";
+import { Db } from "mongodb";
+import { RegisterAdminRoute } from "./admin.route";
+// import { WebsiteRoute } from "./website.route";
+// import { newWebsiteUserRepository } from "../../infrastructure/Repository/website/user.repository";
+
+export function setupRoutes(app: Application, db: Db) {
+  app.get("/", (req: Request, res: Response) => {
+    res.status(200).json({
+      message: `${_config?.Name} server running on port: ${_config?.Port}`,
+    });
+  });
+
+  const apiRouter = require("express").Router();
+
+  const adminRouter = require("express").Router();
+  apiRouter.use("/admin", adminRouter);
+  RegisterAdminRoute(adminRouter, db);
+
+  //const websiteRouter = require("express").Router();
+ // apiRouter.use("/website", websiteRouter);
+  // WebsiteRoute(websiteRouter, db);
+
+  // Mount all /api routes
+  app.use("/api", apiRouter);
+}
