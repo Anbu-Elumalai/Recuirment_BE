@@ -23,7 +23,6 @@ export interface PlanModeDomainRepository {
     getPlanModeList(params: PlanModeListParams, groupId: string): Promise<PaginationResult<PlanDtls[]> | ErrorResponse>;
     deletePlanMode(id: string, userId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse>;
     paymentSubcription(data: PaymentDteailsSchema, userId: string, groupId: string): Promise<ApiResponse<any> | ErrorResponse>
-    paymentWebhook(event: any): Promise<ApiResponse<any> | ErrorResponse>
 }
 
 export interface PlanModeDomainService {
@@ -33,5 +32,4 @@ export interface PlanModeDomainService {
     getPlanModeList(params: PlanModeListParams, groupId: string): Promise<PaginationResult<PlanDtls[]> | ErrorResponse>;
     deletePlanMode(id: string, userId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse>;
     paymentSubcription(data: PaymentDteailsSchema, userId: string, groupId: string): Promise<ApiResponse<any> | ErrorResponse>
-    paymentWebhook(event: any):  Promise<ApiResponse<any> | ErrorResponse>
 }

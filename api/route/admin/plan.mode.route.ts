@@ -16,7 +16,6 @@ export function RegisterPlanModeRoute(
     route.get('/plan-mode/list/dtls', middleware, handler.getPlanModeList)
     route.patch('/plan-mode/delete/:id', middleware, handler.delete);
     route.post('/plan-mode/subcription', middleware, handler.subcription)
-    route.post("/webhook", handler.paymentWebhook)
 }
 
 

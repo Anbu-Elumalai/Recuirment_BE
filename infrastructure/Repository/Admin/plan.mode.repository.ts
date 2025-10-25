@@ -397,53 +397,7 @@ class PlanRepository implements PlanModeDomainRepository {
         }
     }
 
-    async paymentWebhook(event: any): Promise<ApiResponse<any> | ErrorResponse> {
-        try {
-             console.log("*************EVENT TYPE STATUS*********",event);
-
-            const { transactionId, planId, groupId } = event.data.metadata;
-            const eventType = event.type;
-
-            let update: any = {};
-
-            console.log("*************EVENT TYPE STATUS*********",eventType);
-
-            switch (eventType) {
-                case DodoEventType.PAYMENT_SUCCEEDED:
-                    update = { paymentStatus: "success" };
-                    break;
-                case DodoEventType.PAYMENT_FAILED:
-                    update = { paymentStatus: "failed" };
-                    break;
-                case DodoEventType.SUBSCRIPTION_CANCELLED:
-                    update = { paymentStatus: "cancelled" };
-                    break;
-                default:
-                    update = { paymentStatus: eventType };
-            }
-
-            const result = await TransactionModel.findByIdAndUpdate(
-                transactionId,
-                update,
-                { new: true }
-            );
-
-
-            return successResponse("", StatusCodes.OK, {
-                success: true,
-                type: event.type,
-                planId,
-                groupId
-            })
-        } catch (error: any) {
-            return createErrorResponse(
-                'Error dodo webhook',
-                StatusCodes.INTERNAL_SERVER_ERROR,
-                error.message
-            );
-
-        }
-    }
+ 
 }
 
 export function NewPlanRepositoryRegister(db: Db): PlanModeDomainRepository {

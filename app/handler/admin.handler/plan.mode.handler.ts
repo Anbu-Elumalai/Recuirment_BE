@@ -361,54 +361,7 @@ class PlanModeHandler {
             );
         }
     }
-    paymentWebhook = async (req: Request, res: Response) => {
-        // try {
-
-        if (!_config?.WebHookAPiKey) {
-    return res.status(500).send("Missing webhook secret");
-  }
-
-  const wh = new Webhook(_config.WebHookAPiKey);
-
-  const webhookHeaders: Record<string, string> = {
-    "webhook-id": Array.isArray(req.headers["webhook-id"]) ? req.headers["webhook-id"][0] : req.headers["webhook-id"] || "",
-    "webhook-timestamp": Array.isArray(req.headers["webhook-timestamp"]) ? req.headers["webhook-timestamp"][0] : req.headers["webhook-timestamp"] || "",
-    "webhook-signature": Array.isArray(req.headers["webhook-signature"]) ? req.headers["webhook-signature"][0] : req.headers["webhook-signature"] || "",
-  };
-
-  if (!webhookHeaders["webhook-id"] || !webhookHeaders["webhook-timestamp"] || !webhookHeaders["webhook-signature"]) {
-    return res.status(400).send("Missing webhook headers");
-  }
-
-  try {
-    const rawBody = req.body.toString();
-     console.log(webhookHeaders, _config.WebHookAPiKey)
-    const event = await wh.verify(rawBody, webhookHeaders);
-    // Process event
-   // console.log("Verified event:", event.type);
-
-     console.log("lllllllllleeellllllllllllllllllll")
-        const resp = await this.service.paymentWebhook(event)
-
-        console.log("kkkkkkkkkkkk")
-        return sendResponse(res, resp);
-
-    // return res.status(200).send("OK");
-  } catch (error) {
-    console.error("Webhook verification failed:", error);
-    return res.status(400).send("Invalid signature");
-  }
-       
-
-        // } catch (error: any) {
-        //     return sendErrorResponse(
-        //         res,
-        //         StatusCodes.INTERNAL_SERVER_ERROR,
-        //         'Internal server error',
-        //         'INTERNAL_SERVER_ERROR'
-        //     );
-        // }
-    }
+   
 }
 
 export function NewPlanModeHandlerRegister(service: PlanModeDomainService): PlanModeHandler {

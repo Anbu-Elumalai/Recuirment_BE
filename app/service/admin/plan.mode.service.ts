@@ -26,20 +26,6 @@ class PlanService implements PlanModeDomainService {
             );
       }
     }
-   async paymentWebhook(event: any): Promise<ApiResponse<any> | ErrorResponse> {
-        try {
-                        console.log("kkkk   Service kkkkkkkk")
-            
-          return await this.PlanRepo.paymentWebhook(event)
-      } catch (error:any) {
-         return createErrorResponse(
-                'Error dodo payment webhook',
-                StatusCodes.INTERNAL_SERVER_ERROR,
-                error.message
-            );
-      }
-    }
-  
    
     async deletePlanMode(id: string, userId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
         try {

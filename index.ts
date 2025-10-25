@@ -3,11 +3,11 @@ import rateLimit from "express-rate-limit";
 import cors from "cors";
 import path from "path";
 import fileUpload from 'express-fileupload';
-
-import { loadConfig, Configuration } from "./config/config";
+import { loadConfig, Configuration, _config } from "./config/config";
 import { setupRoutes } from "./api/route/base.routes";
 import { initDB } from "./config/database";
-import cron from "node-cron";
+import dodoWebhook from "./utils/common/dodo.webhook.service";
+
 async function main() {
 
   try {
@@ -53,13 +53,15 @@ async function setupServer(config: Configuration) {
 
   const app = express();
 
+  // Mount the webhook route
+  app.use('/webhook', dodoWebhook);
+
+
   setupCors(app);
   setupRateLimiter(app);
   app.use(express.urlencoded({ extended: true }));
   app.use(fileUpload());
   app.use(express.json());
-
-
   setupRoutes(app, db); // define your routes inside ./routes/index.ts
   // check and update expired products
   // cron.schedule('* * * * *', () => {
@@ -69,7 +71,7 @@ async function setupServer(config: Configuration) {
   app.use("/api/public",
     express.static(path.join(__dirname, "public"))
   );
-  
+
   app.listen(Number(config?.Port), () => {
     console.log(`Server running on port ${config?.Port}, ${config?.Name}`);
   });
