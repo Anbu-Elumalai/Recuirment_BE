@@ -14,9 +14,9 @@ class groupService implements groupDomainService {
     constructor(repo: groupDomainRepository) {
         this.groupRepo = repo;
     }
-  async  findLastInterviews(id: string):Promise<ApiResponse<{ count: number; statusCode: number }> | ErrorResponse>{
+  async  findLasttest(id: string):Promise<ApiResponse<{ count: number; statusCode: number }> | ErrorResponse>{
        try {
-          return await this.groupRepo.findLastInterviews(id)
+          return await this.groupRepo.findLasttest(id)
 
        } catch (error) {
          return createErrorResponse(

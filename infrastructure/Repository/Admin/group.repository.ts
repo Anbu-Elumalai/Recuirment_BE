@@ -11,6 +11,9 @@ import { createErrorResponse } from "../../../utils/common/errors";
 import groupModel from "../../../app/model/group";
 import lastInterviewDate from "../../../app/model/lastInterviewDate";
 import adminUser from "../../../app/model/admin.user";
+import { CandidateModel } from "../../../app/model/candidate";
+import { CandidateDtls } from "../../../api/response/candidate.response";
+import testValidationForCandidate from "../../../app/model/config.test.limit";
 
 /**
  * Repository class for handling group-related database operations
@@ -22,12 +25,12 @@ class groupRepository implements groupDomainRepository {
         this.db = db;
     }
 
-    async findLastInterviews(id: string): Promise<ApiResponse<{ count: number; statusCode: number }> | ErrorResponse> {
+    async findLasttest(id: string): Promise<ApiResponse<{ count: number; statusCode: number }> | ErrorResponse> {
         try {
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-            const lastInterviewExist = await adminUser.findOne({
+            const lastInterviewExist = await CandidateModel.findOne({
                 _id: new ObjectId(id),
                 isActive: true,
                 isDelete: false
@@ -37,7 +40,7 @@ class groupRepository implements groupDomainRepository {
                 return createErrorResponse(
                     'Error  candidate not found',
                     StatusCodes.INTERNAL_SERVER_ERROR,
-                    "Admin email not found"
+                    "Error  candidate not found"
                 );
             }
             // Find interviews for the candidate in the last 3 months using createdAt
@@ -241,7 +244,7 @@ class groupRepository implements groupDomainRepository {
     }
     async findgroupNameForUpdate(name: string, id: string, groupId: string): Promise<{ count: number; statusCode: number; } | ErrorResponse> {
         try {
-            const count = await  groupModel.countDocuments({
+            const count = await groupModel.countDocuments({
                 _id: { $ne: new ObjectId(id) },
                 groupName: name.trim(),
                 isDelete: false,
@@ -303,8 +306,8 @@ class groupRepository implements groupDomainRepository {
      */
     async findgroupNameExist(name: string, groupId: string): Promise<{ count: number, statusCode: number } | ErrorResponse> {
         try {
-            
-            const count =await groupModel.countDocuments({
+
+            const count = await groupModel.countDocuments({
                 groupName: name.trim(),
                 isDelete: false,
                 isActive: true,
@@ -356,6 +359,139 @@ class groupRepository implements groupDomainRepository {
             );
         }
     }
+
+    async findAllCandidate(params: groupListParams, userId: string, groupId: string): Promise<PaginationResult<CandidateDtls[]> | ErrorResponse> {
+        try {
+
+            const { page, limit, type } = params
+
+            const matchStage: any = {
+                isActive: true,
+                isDelete: false,
+                createdBy: new ObjectId(userId),
+            };
+
+            const pipeline: any[] = []
+
+            pipeline.push({
+                $match: matchStage
+            })
+
+
+            const testLimit = await testValidationForCandidate.findOne({
+                groupId: new ObjectId(groupId)
+            })
+
+            let noOfTestCanAttent = 0
+            let noOfDaysToAttent = 0
+
+            if (testLimit) {
+                noOfTestCanAttent = testLimit.numberOfTestPerCandidate;
+                noOfDaysToAttent = testLimit.numberOfDaysToAttend;
+            }
+
+            const now = new Date();
+            const pastDate = new Date(now.getTime() - (noOfDaysToAttent * 24 * 60 * 60 * 1000));
+
+
+            pipeline.push(
+                {
+                    $lookup: {
+                        from: "lastinterviews",
+                        localField: "_id",
+                        foreignField: "candidates",
+                        as: "candidateTestCount"
+                    }
+                },
+                {
+                    $project: {
+                        _id: 1, // Keep the candidate's _id
+                        candidateTestCount: {
+                            $filter: {
+                                input: "$candidateTestCount", // The array of test records
+                                as: "test",
+                                cond: { $gte: ["$$test.createdAt", pastDate] } // Filter tests within the valid time window
+                            }
+                        }
+                    }
+                },
+                {
+                    $addFields: {
+                        recentTestCount: { $size: "$candidateTestCount" }, // Count how many tests attended in the valid date range
+                        remainingTestCount: {
+                            $subtract: [noOfTestCanAttent, { $size: "$candidateTestCount" }] // Calculate remaining tests
+                        }
+                    }
+                },
+                {
+                    $addFields: {
+                        isValid: {
+                            $gte: ["$remainingTestCount", 0] // Check if remaining test count is non-negative
+                        }
+                    }
+                },
+                {
+
+                    $lookup: {
+                        from: "admins",
+                        localField: "createdBy",
+                        foreignField: "_id",
+                        as: "createdBy",
+                    },
+                },
+                {
+                    $lookup: {
+                        from: "admins",
+                        localField: "modifiedBy",
+                        foreignField: "_id",
+                        as: "modifiedBy",
+                    },
+                },
+
+            )
+
+
+            pipeline.push({
+                $project: {
+                    _id: 1,
+                    firstName: 1,
+                    lastName: 1,
+                    email: 1,
+                    phone: 1,
+                    // Flags
+                    isActive: 1,
+                    isDelete: 1,
+                    createdBy: { $arrayElemAt: ['$createdBy.name', 0] },
+                    modifiedBy: { $arrayElemAt: ['$modifiedBy.name', 0] },
+                    // Timestamps
+                    createdAt: 1,
+                    updatedAt: 1,
+                    recentTestCount: 1, 
+                    remainingTestCount: 1,
+                    isValid: 1
+                },
+            },)
+
+            if (type !== 'all') {
+                pipeline.push(
+                    { $skip: page * limit },
+                    { $limit: limit }
+                );
+            }
+
+            const roleDtls = await CandidateModel.aggregate(pipeline);
+            const count = await CandidateModel.countDocuments({ isActive: 1, isDelete: 0 })
+            return Pagination(count, roleDtls, limit, page)
+
+        } catch (error: any) {
+            return createErrorResponse(
+                'Error creating role',
+                StatusCodes.INTERNAL_SERVER_ERROR,
+                error.message
+            );
+        }
+    }
+
 }
 
 /**

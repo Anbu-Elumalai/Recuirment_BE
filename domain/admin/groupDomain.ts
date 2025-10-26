@@ -3,6 +3,7 @@ import {  groupDtls } from "../../api/response/group.response"
 import { ErrorResponse } from "../../api/response/cmmonerror"
 import { ApiResponse, SuccessMessage } from "../../api/response/commonResponse"
 import { PaginationResult } from "../../api/response/paginationResponse";
+import { CandidateDtls } from "../../api/response/candidate.response";
 
 export interface groupListParams {
     page: number;
@@ -13,7 +14,8 @@ export interface groupListParams {
 }
 
 export interface groupDomainRepository {
-    findLastInterviews(id: string): Promise<ApiResponse<{ count: number; statusCode: number }> | ErrorResponse>;
+    findLasttest(id: string): Promise<ApiResponse<{ count: number; statusCode: number }> | ErrorResponse>;
+    findAllCandidate(params: groupListParams, userId: string, groupId: string): Promise<PaginationResult<CandidateDtls[]> | ErrorResponse> 
 
     findgroupNameExist(name: string,groupId: string): Promise<{ count: number; statusCode: number } | ErrorResponse>;
     creategroup(groupInput: CreategroupInput,  userId: string,groupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse>;
@@ -26,7 +28,7 @@ export interface groupDomainRepository {
 }
 
 export interface groupDomainService {
-    findLastInterviews(id: string): Promise<ApiResponse<{ count: number; statusCode: number }> | ErrorResponse>;
+    findLasttest(id: string): Promise<ApiResponse<{ count: number; statusCode: number }> | ErrorResponse>;
 
     creategroup(groupInput: CreategroupInput,userId: string,groupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse>;
     updategroup(groupInput: UpdategroupInput,  userId: string,groupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse>;

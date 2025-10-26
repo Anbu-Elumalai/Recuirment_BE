@@ -23,7 +23,6 @@ export const candidateListQuerySchema = z.object({
   limit: z.string().optional(),search: z.string().optional().default(''),
   sort: z.enum(['asc', 'desc']).optional().default('asc'),
   type: z.string().optional().default(''),
-
 });
 
 export type CandidateListQuery = z.infer<typeof candidateListQuerySchema>;

@@ -11,6 +11,7 @@ import { CandidateModel } from "../../../app/model/candidate";
 import lastInterviewDate from "../../../app/model/lastInterviewDate";
 import adminUser from "../../../app/model/admin.user";
 import { successResponse } from "../../../utils/common/commonResponse";
+import configTestLimit from "../../../app/model/config.test.limit";
 
 class CandidateRepository implements CandidateRepositoryDomain {
   private readonly db: Db
@@ -168,7 +169,7 @@ class CandidateRepository implements CandidateRepositoryDomain {
       const threeMonthsAgo = new Date();
       threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-      const emailExist = await adminUser.findOne({
+      const emailExist = await CandidateModel.findOne({
         email: email,
         isActive: true,
         isDelete: false
@@ -282,7 +283,7 @@ class CandidateRepository implements CandidateRepositoryDomain {
   async findAllCandidate(params: ListParams, userId: string): Promise<PaginationResult<CandidateDtls[]> | ErrorResponse> {
     try {
 
-      const { page, limit, type } = params
+      const { page, limit, type  } = params
 
       const matchStage: any = {
         isActive: true,
@@ -310,15 +311,6 @@ class CandidateRepository implements CandidateRepositoryDomain {
           },
         },
 
-        {
-          $lookup: {
-            from: "skills",
-            localField: "skills",
-            foreignField: "_id",
-            as: "skillDetails",
-          },
-        },
-
         // Project
         {
           $project: {
@@ -338,6 +330,7 @@ class CandidateRepository implements CandidateRepositoryDomain {
           },
         },
       ];
+
       if (type !== 'all') {
         pipeline.push(
           { $skip: page * limit },

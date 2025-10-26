@@ -24,6 +24,7 @@ import AdminUsers from "../../../app/model/admin.user";
 import GroupingTeamId from "../../../app/model/organization.groupingIds";
 import forgotpassword from "../../../app/model/forgotpassword";
 import crypto from "crypto";
+import testValidationForCandidate from "../../../app/model/config.test.limit";
 
 class AdminUserRepository implements IAdminRepository {
   private db: Db;
@@ -200,6 +201,16 @@ class AdminUserRepository implements IAdminRepository {
       });
 
       await admin.save();
+
+     const newTestConfig = await testValidationForCandidate.create({
+      numberOfTestsPerCandidate: 1,
+      numberOfDaysToAttend: 3,
+      groupingId:new ObjectId(grouping._id), // Replace with actual grouping ID
+      createdBy:new ObjectId(admin._id) , // Replace with actual admin ID
+      isActive: true, // Optional, default is true
+    });
+
+    console.log('New Test Config Created:', newTestConfig);
 
       const adminUser: AdminUser = {
         id: admin._id.toString(),

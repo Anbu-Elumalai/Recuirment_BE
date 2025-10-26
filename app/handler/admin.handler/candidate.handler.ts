@@ -206,7 +206,7 @@ class candidateHandler {
             limit:finalLimit,
             search,
             sort,
-            type
+            type,
         }, userId);
 
         return sendPaginationResponse(res, response);

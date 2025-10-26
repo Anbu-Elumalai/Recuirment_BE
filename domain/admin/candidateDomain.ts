@@ -7,7 +7,7 @@ export interface ListParams {
     limit: number;
     search: string;
     sort: 'asc' | 'desc';
-    type:string
+    type:string,
 }
 export interface CandidateRepositoryDomain{
     createCandidate(data: CreatecandidateInput , userId: string,groupId : string): Promise<ApiResponse<SuccessMessage> | ErrorResponse>;

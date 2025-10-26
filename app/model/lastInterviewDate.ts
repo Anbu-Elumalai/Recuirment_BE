@@ -60,4 +60,4 @@ const LastInterviewSchema = new Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("LastInterview", LastInterviewSchema);
+export default mongoose.model("lastinterviews", LastInterviewSchema);

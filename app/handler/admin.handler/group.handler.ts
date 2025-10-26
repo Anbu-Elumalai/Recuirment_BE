@@ -12,7 +12,7 @@ class groupHandler {
         this.service = service
     }
 
-    lastInterviewDate = async (req: Request, res: Response) => {
+    findLasttest = async (req: Request, res: Response) => {
         try {
             const { id } = req.params;
 
@@ -34,7 +34,7 @@ class groupHandler {
                 );
             }
 
-            const response = await this.service.findLastInterviews(id);
+            const response = await this.service.findLasttest(id);
             return sendResponse(res, response);
 
         } catch (error: any) {

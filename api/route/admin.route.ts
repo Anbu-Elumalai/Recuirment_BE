@@ -29,6 +29,8 @@ import { NewPlanRepositoryRegister } from "../../infrastructure/Repository/Admin
 import { RegisterPlanModeRoute } from "./admin/plan.mode.route";
 import { NewDODOPayRepositoryRegister } from "../../infrastructure/Repository/Admin/dodo.payment.repository";
 import { RegisterDodoPayRoute } from "./admin/dodopay.route";
+import { NewtestConfigRrpository } from "../../infrastructure/Repository/Admin/test.config.repository";
+import { RegistertestConfigRoute } from "./admin/test.config.route";
 
 export function setupRoutes(router: Router, db: Db) {
 
@@ -49,6 +51,7 @@ export function setupRoutes(router: Router, db: Db) {
   const userRepo = newUserRepositoryRegister(db)
   const planMode = NewPlanRepositoryRegister(db)
   const dodoPay = NewDODOPayRepositoryRegister(db)
+  const testConfigRepo = NewtestConfigRrpository(db)
 
   RegisterskillRoute(router, skillRepo, adminmiddleware.ValidateUser)
   RegisterAdminRoute(router, adminRepo, adminmiddleware.ValidateUser)
@@ -63,7 +66,7 @@ export function setupRoutes(router: Router, db: Db) {
   RegisterUserRoute(router, userRepo, adminmiddleware.ValidateUser)
   RegisterPlanModeRoute(router, planMode, adminmiddleware.ValidateUser)
   RegisterDodoPayRoute(router, dodoPay, adminmiddleware.ValidateUser)
-
+  RegistertestConfigRoute(router, testConfigRepo, adminmiddleware.ValidateUser)
 }
 
 export { setupRoutes as RegisterAdminRoute };

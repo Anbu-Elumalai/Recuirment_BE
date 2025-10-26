@@ -16,7 +16,6 @@ import { _config } from "../../../config/config";
 import subscription from "../../../app/model/subscription";
 import DodoPayments from "dodopayments";
 import { getCountryCode, getSubscriptionStatusMessage } from "../../../utils/utilsFunctions/user.activity";
-import { SubscriptionStatus } from "../../../utils/common/enum";
 
 class PlanRepository implements PlanModeDomainRepository {
     private readonly db: Db
