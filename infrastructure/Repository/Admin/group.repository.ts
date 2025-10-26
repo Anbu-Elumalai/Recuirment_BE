@@ -362,9 +362,8 @@ class groupRepository implements groupDomainRepository {
 
     async findAllCandidate(params: groupListParams, userId: string, groupId: string): Promise<PaginationResult<CandidateDtls[]> | ErrorResponse> {
         try {
-
             const { page, limit, type } = params
-
+ //ad
             const matchStage: any = {
                 isActive: true,
                 isDelete: false,
