@@ -61,7 +61,7 @@ const getDeviceUsed = (userAgent: string): string => {
     return `${os} - ${browser}`;
 };
 
-
+//Country Code Mapping
 export const getCountryCode =async (countryCode: string):Promise< CountryCode | null> => {
     switch (countryCode) {
         case "AF":
