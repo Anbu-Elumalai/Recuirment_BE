@@ -1,4 +1,4 @@
-import { Application, Request, Response, Router } from "express";
+import {  Router } from "express";
 import { _config } from "../../config/config";
 import { Db } from "mongodb";
 import { RegisterAdminRoute } from "./admin/admin.user.route";
@@ -27,6 +27,8 @@ import { newUserRepositoryRegister } from "../../infrastructure/Repository/Admin
 import { RegisterUserRoute } from "./admin/user.route";
 import { NewPlanRepositoryRegister } from "../../infrastructure/Repository/Admin/plan.mode.repository";
 import { RegisterPlanModeRoute } from "./admin/plan.mode.route";
+import { NewDODOPayRepositoryRegister } from "../../infrastructure/Repository/Admin/dodo.payment.repository";
+import { RegisterDodoPayRoute } from "./admin/dodopay.route";
 
 export function setupRoutes(router: Router, db: Db) {
 
@@ -46,6 +48,7 @@ export function setupRoutes(router: Router, db: Db) {
   const assessmentRepo = newAssessmentRegister(db)
   const userRepo = newUserRepositoryRegister(db)
   const planMode = NewPlanRepositoryRegister(db)
+  const dodoPay = NewDODOPayRepositoryRegister(db)
 
   RegisterskillRoute(router, skillRepo, adminmiddleware.ValidateUser)
   RegisterAdminRoute(router, adminRepo, adminmiddleware.ValidateUser)
@@ -59,6 +62,7 @@ export function setupRoutes(router: Router, db: Db) {
   RegisterassessmentRoute(router, assessmentRepo, adminmiddleware.ValidateUser)
   RegisterUserRoute(router, userRepo, adminmiddleware.ValidateUser)
   RegisterPlanModeRoute(router, planMode, adminmiddleware.ValidateUser)
+  RegisterDodoPayRoute(router, dodoPay, adminmiddleware.ValidateUser)
 
 }
 

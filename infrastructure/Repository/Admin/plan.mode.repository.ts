@@ -11,14 +11,19 @@ import { successResponse } from "../../../utils/common/commonResponse";
 import { createErrorResponse } from "../../../utils/common/errors";
 import { PaymentDteailsSchema } from "../../../api/Request/assessment";
 import dodoService from "../../../utils/common/dodo.payment.service";
-import TransactionModel from "../../../app/model/transaction"
 import { DodoEventType } from "../../../utils/common/dodoEventTypes"
 import { _config } from "../../../config/config";
+import subscription from "../../../app/model/subscription";
+import DodoPayments from "dodopayments";
+import { getCountryCode, getSubscriptionStatusMessage } from "../../../utils/utilsFunctions/user.activity";
+import { SubscriptionStatus } from "../../../utils/common/enum";
+
 class PlanRepository implements PlanModeDomainRepository {
     private readonly db: Db
     constructor(db: Db) {
         this.db = db
     }
+
     async findPlanModeNameExist(name: string, groupId: string): Promise<{ count: number; statusCode: number; } | ErrorResponse> {
         try {
             const count = await planMode.countDocuments({
@@ -307,99 +312,11 @@ class PlanRepository implements PlanModeDomainRepository {
         }
     }
 
-    async paymentSubcription(data: PaymentDteailsSchema, userId: string, groupId: string): Promise<ApiResponse<PaymentResponse> | ErrorResponse> {
-        try {
+  
 
-            console.log(data.amount)
-
-            const findDodoProductID = await planMode.findOne({
-                _id: new ObjectId(data.planId),
-                isActive: true,
-                isDelete: false
-            })
-
-            if (!findDodoProductID) {
-                return createErrorResponse(
-                    'Error product not found.',
-                    StatusCodes.INTERNAL_SERVER_ERROR,
-                    'Error product not found.',
-                );
-            }
-
-            const transaction = new TransactionModel({
-                userId: new ObjectId(userId),
-                planId: new ObjectId(data.planId),
-                amount: data.amount,
-                paymentStatus: "pending",
-                currency: data.currency,
-                createdBy:new ObjectId(userId),
-                groupingId:new ObjectId(groupId)
-            });
-
-            await transaction.save();
-
-            const obj = {
-                product_id: 'pdt_OKYujFYRxFJF2BJjzV5vv', // findDodoProductID.dodoProductId,
-                quantity: 1,
-                billing: {
-                    city: data.billing.city,
-                    country: data.billing.country,
-                    state: data.billing.state,
-                    street: data.billing.street,
-                    zipcode: data.billing.zipcode,
-                },
-                customer: {
-                    email: data.email,
-                    name: data.name,
-                    phone_number: data.phoneNumber,
-                    amount: data.amount,
-                    userId: userId
-                },
-
-                payment_link: true,
-                return_url: _config?.redirectUrl,
-                cancel_url: _config?.CancelUrl,
-                metadata: {
-                    userId: userId.toString(),
-                    planId: data.planId.toString(),
-                    groupId: groupId.toString(),
-                    transactionId: transaction._id.toString()
-                },
-            };
-
-            console.log("=============Dodo service start=================")
-
-            const resp = await dodoService.dodoPaymentService(obj)
-
-            console.log("*************** payment response *************", resp.data,);
-
-            await TransactionModel.findByIdAndUpdate(transaction._id, {
-                dodoPaymentId: resp.data.payment_id,
-                subscriptionId: resp.data.subscription_id,
-                paymentLink: resp.data.payment_link,
-                expiresOn: resp.data.expires_on,
-                recurringPreTaxAmount:resp.data.recurring_pre_tax_amount
-            });
-
-
-            return successResponse("", StatusCodes.OK, {
-                success: true,
-                checkoutUrl: resp?.data.checkoutUrl?.toString(),
-            })
-
-
-        } catch (error: any) {
-            return createErrorResponse(
-                'Error buy plan',
-                StatusCodes.INTERNAL_SERVER_ERROR,
-                error.message
-            );
-        }
-    }
-
- 
 }
 
 export function NewPlanRepositoryRegister(db: Db): PlanModeDomainRepository {
     return new PlanRepository(db)
 }
+

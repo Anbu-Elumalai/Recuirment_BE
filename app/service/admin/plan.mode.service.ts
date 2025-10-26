@@ -3,7 +3,7 @@ import { PlanSchemaInput, UpdatePlanInput } from "../../../api/Request/plan.mode
 import { PaymentResponse, PlanDtls } from "../../../api/response/planMode.response";
 import { ErrorResponse } from "../../../api/response/cmmonerror";
 import { ApiResponse, SuccessMessage } from "../../../api/response/commonResponse";
-import {PlanModeDomainRepository,PlanModeDomainService,PlanModeListParams } from "../../../domain/admin/plan.modeDomain";
+import { PlanModeDomainRepository, PlanModeDomainService, PlanModeListParams } from "../../../domain/admin/plan.modeDomain";
 import { createErrorResponse } from "../../../utils/common/errors";
 import { PaginationResult } from "../../../api/response/paginationResponse";
 import { Uploads } from "../../../utils/uploads/image.upload";
@@ -15,18 +15,9 @@ class PlanService implements PlanModeDomainService {
     constructor(repo: PlanModeDomainRepository) {
         this.PlanRepo = repo;
     }
-   async paymentSubcription(data: PaymentDteailsSchema, userId: string, groupId: string): Promise<ApiResponse<any> | ErrorResponse> {
-      try {
-          return await this.PlanRepo.paymentSubcription(data, userId, groupId)
-      } catch (error:any) {
-         return createErrorResponse(
-                'Error dodo payment Plan',
-                StatusCodes.INTERNAL_SERVER_ERROR,
-                error.message
-            );
-      }
-    }
-   
+
+
+
     async deletePlanMode(id: string, userId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
         try {
             const isExist = await this.PlanRepo.findPlanModeIdisExist(id);
@@ -43,16 +34,17 @@ class PlanService implements PlanModeDomainService {
                 );
             }
 
-           
+
             return await this.PlanRepo.deletePlanMode(id, userId);
-        } catch (error:any) {
+        } catch (error: any) {
             return createErrorResponse(
                 'Error delete Plan',
                 StatusCodes.INTERNAL_SERVER_ERROR,
                 error.message
             );
-        }    }
-    async getPlanModeList(params: PlanModeListParams, groupId:string): Promise<PaginationResult<PlanDtls[]> | ErrorResponse> {
+        }
+    }
+    async getPlanModeList(params: PlanModeListParams, groupId: string): Promise<PaginationResult<PlanDtls[]> | ErrorResponse> {
         try {
             return await this.PlanRepo.getPlanModeList(params, groupId);
         } catch (error: any) {
@@ -63,46 +55,46 @@ class PlanService implements PlanModeDomainService {
             );
         }
     }
-   async findPlanModeById(id: string): Promise<ApiResponse<PlanDtls> | ErrorResponse> {
-       try {
-        const isExist = await this.PlanRepo.findPlanModeIdisExist(id)
-
-        if (typeof isExist !== 'boolean' &&'status' in isExist && isExist.status === 'error') {
-         return isExist as ErrorResponse;
-        }
-
-         if(!isExist){
-             return createErrorResponse(
-                 'Plan not found.',
-                 StatusCodes.CONFLICT
-             );
-         }
-
-         return await this.PlanRepo.findPlanModeById(id)
-         
-       } catch (error:any) {
-        return createErrorResponse(
-            'Error creating Plan',
-            StatusCodes.INTERNAL_SERVER_ERROR,
-            error.message
-        );
-       }
-    }
-    async updatePlanMode(PlanInput: UpdatePlanInput,id:string,userId: string, groupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
+    async findPlanModeById(id: string): Promise<ApiResponse<PlanDtls> | ErrorResponse> {
         try {
-            
-           const isExist = await this.PlanRepo.findPlanModeIdisExist(PlanInput.id)
+            const isExist = await this.PlanRepo.findPlanModeIdisExist(id)
 
-           if (typeof isExist !== 'boolean' && 'status' in isExist && isExist.status === 'error') {
-            return isExist as ErrorResponse;
-           }
+            if (typeof isExist !== 'boolean' && 'status' in isExist && isExist.status === 'error') {
+                return isExist as ErrorResponse;
+            }
 
-           if(!isExist){
+            if (!isExist) {
+                return createErrorResponse(
+                    'Plan not found.',
+                    StatusCodes.CONFLICT
+                );
+            }
+
+            return await this.PlanRepo.findPlanModeById(id)
+
+        } catch (error: any) {
             return createErrorResponse(
-                'Plan not found.',
-                StatusCodes.CONFLICT
+                'Error creating Plan',
+                StatusCodes.INTERNAL_SERVER_ERROR,
+                error.message
             );
-           }
+        }
+    }
+    async updatePlanMode(PlanInput: UpdatePlanInput, id: string, userId: string, groupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
+        try {
+
+            const isExist = await this.PlanRepo.findPlanModeIdisExist(PlanInput.id)
+
+            if (typeof isExist !== 'boolean' && 'status' in isExist && isExist.status === 'error') {
+                return isExist as ErrorResponse;
+            }
+
+            if (!isExist) {
+                return createErrorResponse(
+                    'Plan not found.',
+                    StatusCodes.CONFLICT
+                );
+            }
             // Check for existing Plan name
             const existingPlan = await this.PlanRepo.findPlanModeNameForUpdate(PlanInput.name, PlanInput.id);
 
@@ -113,7 +105,7 @@ class PlanService implements PlanModeDomainService {
 
             // At this point, existingPlan must be the success response type
             const PlanExists = existingPlan as { count: number; statusCode: number };
-            
+
             // Check if Plan already exists
             if (PlanExists.statusCode === StatusCodes.OK && PlanExists.count > 0) {
                 return createErrorResponse(
@@ -123,7 +115,7 @@ class PlanService implements PlanModeDomainService {
             }
 
             // Create the Plan
-            return await this.PlanRepo.updatePlanMode(PlanInput,id, userId,groupId);
+            return await this.PlanRepo.updatePlanMode(PlanInput, id, userId, groupId);
         } catch (error: any) {
             return createErrorResponse(
                 'Error creating Plan',
@@ -140,9 +132,9 @@ class PlanService implements PlanModeDomainService {
      */
     async createPlanMode(PlanInput: PlanSchemaInput, userId: string, groupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
         try {
-            
+
             // Check for existing Plan name
-            const existingPlan = await this.PlanRepo.findPlanModeNameExist(PlanInput.name,groupId);
+            const existingPlan = await this.PlanRepo.findPlanModeNameExist(PlanInput.name, groupId);
 
             // Handle potential error from repository
             if ('status' in existingPlan && existingPlan.status === 'error') {
@@ -151,7 +143,7 @@ class PlanService implements PlanModeDomainService {
 
             // At this point, existingPlan must be the success response type
             const PlanExists = existingPlan as { count: number; statusCode: number };
-            
+
             // Check if Plan already exists
             if (PlanExists.statusCode === StatusCodes.OK && PlanExists.count > 0) {
                 return createErrorResponse(
@@ -159,9 +151,9 @@ class PlanService implements PlanModeDomainService {
                     StatusCodes.CONFLICT
                 );
             }
-                      
+
             // Create the Plan
-            return await this.PlanRepo.createPlanMode(PlanInput, userId,groupId);
+            return await this.PlanRepo.createPlanMode(PlanInput, userId, groupId);
         } catch (error: any) {
             return createErrorResponse(
                 'Error creating Plan',
@@ -170,6 +162,8 @@ class PlanService implements PlanModeDomainService {
             );
         }
     }
+
+
 }
 
 export function NewPlanServiceRegister(PlanRepo: PlanModeDomainRepository): PlanModeDomainService {

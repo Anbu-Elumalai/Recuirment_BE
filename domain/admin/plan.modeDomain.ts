@@ -1,9 +1,8 @@
 import { PlanSchemaInput, UpdatePlanInput } from "../../api/Request/plan.mode"
-import { PlanDtls ,PaymentResponse} from "../../api/response/planMode.response"
+import { PlanDtls, PaymentResponse } from "../../api/response/planMode.response"
 import { ErrorResponse } from "../../api/response/cmmonerror"
 import { ApiResponse, SuccessMessage } from "../../api/response/commonResponse"
 import { PaginationResult } from "../../api/response/paginationResponse";
-import { PaymentDteailsSchema } from "../../api/Request/assessment";
 
 export interface PlanModeListParams {
     page: number;
@@ -22,7 +21,7 @@ export interface PlanModeDomainRepository {
     findPlanModeById(id: string): Promise<ApiResponse<PlanDtls> | ErrorResponse>;
     getPlanModeList(params: PlanModeListParams, groupId: string): Promise<PaginationResult<PlanDtls[]> | ErrorResponse>;
     deletePlanMode(id: string, userId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse>;
-    paymentSubcription(data: PaymentDteailsSchema, userId: string, groupId: string): Promise<ApiResponse<any> | ErrorResponse>
+
 }
 
 export interface PlanModeDomainService {
@@ -31,5 +30,5 @@ export interface PlanModeDomainService {
     findPlanModeById(id: string): Promise<ApiResponse<PlanDtls> | ErrorResponse>;
     getPlanModeList(params: PlanModeListParams, groupId: string): Promise<PaginationResult<PlanDtls[]> | ErrorResponse>;
     deletePlanMode(id: string, userId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse>;
-    paymentSubcription(data: PaymentDteailsSchema, userId: string, groupId: string): Promise<ApiResponse<any> | ErrorResponse>
+   
 }

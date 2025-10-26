@@ -12,7 +12,9 @@ export enum DodoEventType {
   SUBSCRIPTION_RENEWED = "subscription.renewed",
   SUBSCRIPTION_PLAN_CHANGED = "subscription.plan_changed",
   SUBSCRIPTION_CANCELLED = "subscription.cancelled",
-
+  SUBSCRIPTION_EXPIRED = "subscription.expired",
+  SUBSCRIPTION_SUCCEEDED = "subscription.succeeded",
+  
   // 🔹 Refunds or disputes (optional, if you plan to handle them)
   REFUND_INITIATED = "refund.initiated",
   REFUND_COMPLETED = "refund.completed",

@@ -313,57 +313,7 @@ class PlanModeHandler {
             );
         }
     }
-
-    subcription = async (req: Request, res: Response): Promise<any> => {
-        try {
-            const result = paymentDteails.safeParse(req.body);
-
-            if (!result.success) {
-                return sendErrorResponse(
-                    res,
-                    StatusCodes.BAD_REQUEST,
-                    'Invalid request body',
-                    'INVALID_INPUT',
-                    result.error.issues
-                );
-            }
-
-            const userId = req.user?.id;
-            if (!userId) {
-                return sendErrorResponse(
-                    res,
-                    StatusCodes.UNAUTHORIZED,
-                    'User not authenticated',
-                    'UNAUTHORIZED'
-                );
-            }
-
-            const groupId = req.user.groupingId
-
-            if (!groupId) {
-                return sendErrorResponse(
-                    res,
-                    StatusCodes.UNAUTHORIZED,
-                    'User not authenticated',
-                    'UNAUTHORIZED'
-                );
-            }
-
-            const response = await this.service.paymentSubcription(result.data, userId, groupId);
-            return sendResponse(res, response);
-
-        } catch (error: any) {
-            return sendErrorResponse(
-                res,
-                StatusCodes.INTERNAL_SERVER_ERROR,
-                'Internal server error',
-                'INTERNAL_SERVER_ERROR'
-            );
-        }
-    }
-   
 }
-
 export function NewPlanModeHandlerRegister(service: PlanModeDomainService): PlanModeHandler {
     return new PlanModeHandler(service)
 }
