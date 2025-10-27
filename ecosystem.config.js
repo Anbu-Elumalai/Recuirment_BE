@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'nalsuvai-backend',
+      name: 'Recuriment',
       script: './dist/index.js',
       interpreter: 'node',
       watch: false,

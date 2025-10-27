@@ -13,6 +13,8 @@ import lastInterviewDate from "../../../app/model/lastInterviewDate";
 import adminUser from "../../../app/model/admin.user";
 import { CandidateModel } from "../../../app/model/candidate";
 import { CandidateDtls } from "../../../api/response/candidate.response";
+import subscription from "../../../app/model/subscription";
+import lanchAssessment from "../../../app/model/lanchAssessment";
 
 /**
  * Repository class for handling group-related database operations
@@ -333,7 +335,7 @@ class groupRepository implements groupDomainRepository {
      */
     async creategroup(groupInput: CreategroupInput, userId: string, groupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
         try {
-            console.log("kkkkkkkkkkkk")
+
             const input = {
                 groupName: groupInput.name.trim(),
                 canidateId: groupInput.candidateId.map((e) => new ObjectId(e)),
@@ -343,7 +345,6 @@ class groupRepository implements groupDomainRepository {
                 applicationId: new ObjectId(groupInput.applicationId)
             };
             await groupModel.create(input);
-
 
             const result: SuccessMessage = {
                 message: 'group created success.'
@@ -358,9 +359,6 @@ class groupRepository implements groupDomainRepository {
             );
         }
     }
-
-    
-
 }
 
 /**

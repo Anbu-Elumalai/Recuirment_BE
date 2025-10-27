@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'Ilap_backend',
+      name: 'Recuriment',
       script: './index.ts', // direct script
       interpreter: 'ts-node',   // explicitly use ts-node
       watch: false,

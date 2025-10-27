@@ -8,7 +8,6 @@ import adminUser from "../../../app/model/admin.user";
 import { UserDomainRepository, userListParams } from "../../../domain/admin/admin.userDomain";
 import { Db, ObjectId } from "mongodb";
 import { createErrorResponse } from "../../../utils/common/errors";
-import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { successResponse } from "../../../utils/common/commonResponse";
 import subscription from "../../../app/model/subscription";

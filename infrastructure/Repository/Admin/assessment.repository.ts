@@ -15,25 +15,25 @@ import group from "../../../app/model/group";
 import mailService from "../../../utils/common/mail.service";
 import { _config } from "../../../config/config";
 import { QuestionGroupModel } from "../../../app/model/question.group";
-import Types from "mongodb"
 import { QuestionModel } from "../../../app/model/question";
 import lastInterviewDate from "../../../app/model/lastInterviewDate";
 import { AssessAnsInput, AssessmentSubmitionSchema } from "../../../api/Request/questionAns";
 import subscription from "../../../app/model/subscription";
+
 class AssessmentRepository implements AssRepositoryDomain {
     private readonly db: Db
 
     constructor(db: Db) {
         this.db = db
     }
-    async createAssessment(data: CreateassessmentInput, userId: string, groupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
+    async createAssessment(data: CreateassessmentInput, userId: string, userGroupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
         try {
 
             const currentDate = new Date();
 
             const currentPlanDetails = await subscription.findOne({
-                'metadata.groupId': new ObjectId(groupId), // filter by group
-                status: { $in: ['active', 'renewed'] },                  // active or renewed subscription
+                'metadata.groupId': new ObjectId(userGroupId), // filter by group
+                status: { $in: ['active', 'renewed'] }, // active or renewed subscription
                 next_billing_date: { $gte: currentDate }
             })
                 .populate('metadata.planId')
@@ -43,60 +43,57 @@ class AssessmentRepository implements AssRepositoryDomain {
             if (currentPlanDetails && currentPlanDetails.metadata?.planId) {
 
                 const plan = currentPlanDetails.metadata!.planId as any;
-                const dur = plan.duration
+                const dur = plan.duration;
                 const candidateLimit = plan.candidateLimit;
 
                 const nextBillingDate = currentPlanDetails.next_billing_date!;
-                let fromDate: Date;
+                let fromDate = new Date(nextBillingDate);
 
-                fromDate = new Date(nextBillingDate);
-
-                if (dur == "monthly") {
+                // Calculate previous billing start date based on duration
+                if (dur === "monthly") {
                     fromDate.setMonth(fromDate.getMonth() - 1);
-                } else if (dur == 'yearly') {
+                } else if (dur === "yearly") {
                     fromDate.setFullYear(fromDate.getFullYear() - 1);
                 } else {
                     return createErrorResponse(
                         "Error",
                         StatusCodes.BAD_REQUEST,
-                        "Subcription period is not found"
+                        "Subscription period is not found"
                     );
                 }
 
-
+                // Fetch all assessments within the billing period
                 const assessments = await lanchAssessment.find({
-                    groupingId: new ObjectId(groupId),
+                    groupingId: new ObjectId(userGroupId),
                     isActive: true,
                     isDelete: false,
-                    createdAt: {
-                        $gte: fromDate,
-                        $lte: nextBillingDate
-                    }
+                    createdAt: { $gte: fromDate, $lte: nextBillingDate },
                 });
 
-                // Get all group candidate IDs from assessments
+                // Extract and deduplicate groupCandidateIds
                 const groupCandidateIds = assessments.map(e => e.groupCandidateId);
+                const uniqueGrpCandIds = Array.from(new Set(groupCandidateIds.filter(Boolean))); // avoid null/undefined
 
-                // Remove duplicates
-                const uniqueGrpCandId = Array.from(new Set(groupCandidateIds));
-
-                // Fetch group details for these IDs
+                // Fetch group details for those IDs
                 const groupCandiDtls = await group.find({
-                    _id: { $in: uniqueGrpCandId }
+                    _id: { $in: uniqueGrpCandIds },
+                    isActive: true,
+                    isDelete: false,
                 });
 
-                // ⚠️ Use canidateId as defined in your schema
+                // Flatten all candidate IDs from groups
                 const grpCandidateIds = groupCandiDtls.flatMap(e => e.canidateId);
 
-                // Extract candidate IDs from assessments (flattened)
-                const assCandIds = assessments.flatMap(e => e.candidateIds);
+                // Flatten candidate IDs from assessments
+                const assCandIds = assessments.flatMap(e => e.candidateIds || []);
 
-                // Combine and get unique
+                // Combine and deduplicate (normalize to strings for safe comparison)
                 const final = [...grpCandidateIds, ...assCandIds];
-                const uniqueCanIds = Array.from(new Set(final));
+                const uniqueCanIds = Array.from(new Set(final.map(id => id.toString())));
 
                 console.log("Unique Candidate Count:", uniqueCanIds.length);
 
+                // Check if current usage already exceeds the plan
                 if (uniqueCanIds.length > candidateLimit) {
                     return createErrorResponse(
                         "Error",
@@ -105,12 +102,56 @@ class AssessmentRepository implements AssRepositoryDomain {
                     );
                 }
 
-               
+                // Handle candidateIds coming from request
+                if (Array.isArray(data.candidateIds) && data.candidateIds.length > 0) {
+                    const filteredIds = data.candidateIds.filter(
+                        e => !uniqueCanIds.includes(e.toString())
+                    );
 
-                if(data.candidateIds){
-                     data.candidateIds.filter((e)=> 
-                       uniqueCanIds.map((exist)=> e !== exist)
-                    )
+                    const totalAfterAdd = uniqueCanIds.length + filteredIds.length;
+
+                    if (totalAfterAdd > candidateLimit) {
+                        const remaining = candidateLimit - uniqueCanIds.length;
+                        return createErrorResponse(
+                            "Error",
+                            StatusCodes.BAD_REQUEST,
+                            `Already ${uniqueCanIds.length} unique candidate(s) added. ` +
+                            `Only ${remaining} more can be added based on your current plan.`
+                        );
+                    }
+                }
+
+                // Handle when adding a group of candidates
+                if (data.isGroupCandidate && data.assessmentGroupCandidateId) {
+                    const findGroupCandi = await group.findOne({
+                        _id: new ObjectId(data.assessmentGroupCandidateId),
+                        isActive: true,
+                        isDelete: false,
+                    });
+
+                    if (!findGroupCandi) {
+                        return createErrorResponse(
+                            "Error",
+                            StatusCodes.BAD_REQUEST,
+                            "Group Candidate is not found"
+                        );
+                    }
+
+                    // Filter only new (non-existing) candidate IDs from the group
+                    const filteredIds = findGroupCandi.canidateId
+                        .filter(e => !uniqueCanIds.includes(e.toString()));
+
+                    const totalAfterAdd = uniqueCanIds.length + filteredIds.length;
+
+                    if (totalAfterAdd > candidateLimit) {
+                        const remaining = candidateLimit - uniqueCanIds.length;
+                        return createErrorResponse(
+                            "Error",
+                            StatusCodes.BAD_REQUEST,
+                            `Already ${uniqueCanIds.length} unique candidate(s) added. ` +
+                            `Only ${remaining} more can be added based on your current plan.Please check a candidate group`
+                        );
+                    }
                 }
 
             } else {
@@ -145,7 +186,7 @@ class AssessmentRepository implements AssRepositoryDomain {
 
                 createdBy: new ObjectId(userId),
                 modifiedBy: null,
-                groupingId: new ObjectId(groupId),
+                groupingId: new ObjectId(userGroupId),
                 isGroupCandidate: data.isGroupCandidate
             };
 
@@ -160,9 +201,142 @@ class AssessmentRepository implements AssRepositoryDomain {
             );
         }
     }
-    async updateAssessment(data: UpdateassessmentInput, id: string, userId: string, groupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
+    async updateAssessment(data: UpdateassessmentInput, id: string, userId: string, userGroupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
         try {
 
+            const currentDate = new Date();
+
+            const currentPlanDetails = await subscription.findOne({
+                'metadata.groupId': new ObjectId(userGroupId), // filter by group
+                status: { $in: ['active', 'renewed'] }, // active or renewed subscription
+                next_billing_date: { $gte: currentDate }
+            })
+                .populate('metadata.planId')
+                .sort({ next_billing_date: -1 });
+
+
+            if (currentPlanDetails && currentPlanDetails.metadata?.planId) {
+
+                const plan = currentPlanDetails.metadata!.planId as any;
+                const dur = plan.duration;
+                const candidateLimit = plan.candidateLimit;
+
+                const nextBillingDate = currentPlanDetails.next_billing_date!;
+                let fromDate = new Date(nextBillingDate);
+
+                // Calculate previous billing start date based on duration
+                if (dur === "monthly") {
+                    fromDate.setMonth(fromDate.getMonth() - 1);
+                } else if (dur === "yearly") {
+                    fromDate.setFullYear(fromDate.getFullYear() - 1);
+                } else {
+                    return createErrorResponse(
+                        "Error",
+                        StatusCodes.BAD_REQUEST,
+                        "Subscription period is not found"
+                    );
+                }
+
+                // Fetch all assessments within the billing period
+                const assessments = await lanchAssessment.find({
+                    groupingId: new ObjectId(userGroupId),
+                    isActive: true,
+                    isDelete: false,
+                    createdAt: { $gte: fromDate, $lte: nextBillingDate },
+                });
+
+                // Extract and deduplicate groupCandidateIds
+                const groupCandidateIds = assessments.map(e => e.groupCandidateId);
+                const uniqueGrpCandIds = Array.from(new Set(groupCandidateIds.filter(Boolean))); // avoid null/undefined
+
+                // Fetch group details for those IDs
+                const groupCandiDtls = await group.find({
+                    _id: { $in: uniqueGrpCandIds },
+                    isActive: true,
+                    isDelete: false,
+                });
+
+                // Flatten all candidate IDs from groups
+                // Confirm your schema field name (`candidateId` vs `canidateId`)
+                const grpCandidateIds = groupCandiDtls.flatMap(e => e.canidateId);
+
+                // Flatten candidate IDs from assessments
+                const assCandIds = assessments.flatMap(e => e.candidateIds || []);
+
+                // Combine and deduplicate (normalize to strings for safe comparison)
+                const final = [...grpCandidateIds, ...assCandIds];
+                const uniqueCanIds = Array.from(new Set(final.map(id => id.toString())));
+
+                console.log("Unique Candidate Count:", uniqueCanIds.length);
+
+                // Check if current usage already exceeds the plan
+                if (uniqueCanIds.length > candidateLimit) {
+                    return createErrorResponse(
+                        "Error",
+                        StatusCodes.BAD_REQUEST,
+                        "Unique Candidate limit exceeded for this plan"
+                    );
+                }
+
+                // Handle candidateIds coming from request
+                if (Array.isArray(data.candidateIds) && data.candidateIds.length > 0) {
+                    const filteredIds = data.candidateIds.filter(
+                        e => !uniqueCanIds.includes(e.toString())
+                    );
+
+                    const totalAfterAdd = uniqueCanIds.length + filteredIds.length;
+
+                    if (totalAfterAdd > candidateLimit) {
+                        const remaining = candidateLimit - uniqueCanIds.length;
+                        return createErrorResponse(
+                            "Error",
+                            StatusCodes.BAD_REQUEST,
+                            `Already ${uniqueCanIds.length} unique candidate(s) added. ` +
+                            `Only ${remaining} more can be added based on your current plan.`
+                        );
+                    }
+                }
+
+                // Handle when adding a group of candidates
+                if (data.isGroupCandidate && data.assessmentGroupCandidateId) {
+                    const findGroupCandi = await group.findOne({
+                        _id: new ObjectId(data.assessmentGroupCandidateId),
+                        isActive: true,
+                        isDelete: false,
+                    });
+
+                    if (!findGroupCandi) {
+                        return createErrorResponse(
+                            "Error",
+                            StatusCodes.BAD_REQUEST,
+                            "Group Candidate is not found"
+                        );
+                    }
+
+                    // Filter only new (non-existing) candidate IDs from the group
+                    const filteredIds = findGroupCandi.canidateId
+                        .filter(e => !uniqueCanIds.includes(e.toString()));
+
+                    const totalAfterAdd = uniqueCanIds.length + filteredIds.length;
+
+                    if (totalAfterAdd > candidateLimit) {
+                        const remaining = candidateLimit - uniqueCanIds.length;
+                        return createErrorResponse(
+                            "Error",
+                            StatusCodes.BAD_REQUEST,
+                            `Already ${uniqueCanIds.length} unique candidate(s) added. ` +
+                            `Only ${remaining} more can be added based on your current plan.Please check a candidate group`
+                        );
+                    }
+                }
+
+            } else {
+                return createErrorResponse(
+                    "Error",
+                    StatusCodes.BAD_REQUEST,
+                    "Active subscription plan not found"
+                );
+            }
 
             const obj = {
                 assessmentName: data.name,
@@ -185,7 +359,7 @@ class AssessmentRepository implements AssRepositoryDomain {
                 urlExpiresAt: new Date(data.endDateTime),
 
                 modifiedBy: new ObjectId(userId),
-                groupingId: new ObjectId(groupId),
+                groupingId: new ObjectId(userGroupId),
                 isGroupCandidate: data.isGroupCandidate
 
             };

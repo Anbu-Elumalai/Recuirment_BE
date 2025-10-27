@@ -12,6 +12,7 @@ import lastInterviewDate from "../../../app/model/lastInterviewDate";
 import adminUser from "../../../app/model/admin.user";
 import { successResponse } from "../../../utils/common/commonResponse";
 import testValidationForCandidate from "../../../app/model/config.test.limit";
+import subscription from "../../../app/model/subscription";
 
 class CandidateRepository implements CandidateRepositoryDomain {
   private readonly db: Db
@@ -317,6 +318,35 @@ class CandidateRepository implements CandidateRepositoryDomain {
       const now = new Date();
       const pastDate = new Date(now.getTime() - (noOfDaysToAttend * 24 * 60 * 60 * 1000));
 
+      const currentDate = new Date();
+
+      const currentPlanDetails = await subscription.findOne({
+        'metadata.groupId': new ObjectId(groupId), // filter by group
+        status: { $in: ['active', 'renewed'] }, // active or renewed subscription
+        next_billing_date: { $gte: currentDate }
+      })
+        .populate('metadata.planId')
+        .sort({ next_billing_date: -1 });
+
+      // Only compute if subscription exists
+      let fromDate: Date | null = null;
+      let nextBillingDate: Date | null = null;
+
+      if (currentPlanDetails && currentPlanDetails.metadata?.planId) {
+        const plan = currentPlanDetails.metadata!.planId as any;
+        const dur = plan.duration;
+
+        nextBillingDate = currentPlanDetails.next_billing_date!;
+        fromDate = new Date(nextBillingDate);
+
+        // Calculate previous billing start date based on duration
+        if (dur === "monthly") {
+          fromDate.setMonth(fromDate.getMonth() - 1);
+        } else if (dur === "yearly") {
+          fromDate.setFullYear(fromDate.getFullYear() - 1);
+        }
+      }
+
 
       pipeline.push(
         {
@@ -336,6 +366,18 @@ class CandidateRepository implements CandidateRepositoryDomain {
                 as: "test",
                 cond: { $gte: ["$$test.createdAt", pastDate] } // Filter tests within the valid time window
               }
+            },
+            testsInPlanPeriod: {
+              $filter: {
+                input: "$candidateTestCount",
+                as: "test",
+                cond: {
+                  $and: [
+                    { $gte: ["$$test.createdAt", fromDate] },
+                    { $lte: ["$$test.createdAt", nextBillingDate] }
+                  ]
+                }
+              }
             }
           }
         },
@@ -344,6 +386,9 @@ class CandidateRepository implements CandidateRepositoryDomain {
             recentTestCount: { $size: "$candidateTestCount" }, // Count how many tests attended in the valid date range
             remainingTestCount: {
               $subtract: [noOfTestCanAttend, { $size: "$candidateTestCount" }] // Calculate remaining tests
+            },
+            hasAttendedTestInPlanPeriod: {
+              $gt: [{ $size: "$testsInPlanPeriod" }, 0]
             }
           }
         },
@@ -404,7 +449,8 @@ class CandidateRepository implements CandidateRepositoryDomain {
           updatedAt: 1,
           recentTestCount: 1,
           remainingTestCount: 1,
-          isValid: 1
+          isValid: 1,
+          hasAttendedTestInPlanPeriod:1
         },
       },)
 
