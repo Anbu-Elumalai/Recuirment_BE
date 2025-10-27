@@ -94,9 +94,9 @@ class candidateService implements CandidateServiceDomain {
         }
     }
 
-    async findAllCandidate(params: ListParams, userId: string): Promise<PaginationResult<CandidateDtls[]> | ErrorResponse> {
+    async findAllCandidate(params: ListParams, userId: string, groupId: string): Promise<PaginationResult<CandidateDtls[]> | ErrorResponse> {
         try {
-            return await this.repo.findAllCandidate(params, userId);
+            return await this.repo.findAllCandidate(params, userId, groupId);
         } catch (error: any) {
             return createErrorResponse(
                 'Error retrieving candidate list',

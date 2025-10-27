@@ -12,6 +12,8 @@ export function RegistertestConfigRoute(
   
     route.patch('/testConfig/edit/:id', middleware, handler.update)
     route.get('/testConfig/:id', middleware, handler.gettestConfigDetails)
+    route.get('/check/is-vaild-testConfig', middleware, handler.checkIsValidConfigBaseOnPlanMode)
+
 }
 
 

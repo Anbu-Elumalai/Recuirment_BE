@@ -9,6 +9,8 @@ import { testConfigDomainRepository } from "../../../domain/admin/test.configDom
 import { successResponse } from "../../../utils/common/commonResponse";
 import { createErrorResponse } from "../../../utils/common/errors";
 import testConfigModel from "../../../app/model/config.test.limit";
+import subscription from "../../../app/model/subscription";
+import testValidationForCandidate from "../../../app/model/config.test.limit";
 
 /**
  * Repository class for handling testConfig-related database operations
@@ -20,6 +22,57 @@ class testConfigRepository implements testConfigDomainRepository {
         this.db = db;
     }
 
+    async checkIsValidConfigBaseOnPlanMode(groupId: string): Promise<ApiResponse<{ isValid: boolean, planTestLimit: number, configTestNumber: number }> | ErrorResponse> {
+        try {
+
+            const currentDate = new Date();
+
+            const currentPlanDetails = await subscription.findOne({
+                'metadata.groupId': new ObjectId(groupId), // filter by group
+                status: { $in: ['active', 'renewed'] },                  // active or renewed subscription
+                next_billing_date: { $gte: currentDate }
+            })
+                .populate('metadata.planId')
+                .sort({ next_billing_date: -1 });
+
+            if (currentPlanDetails && currentPlanDetails.metadata?.planId) {
+                const plan = currentPlanDetails.metadata!.planId as any;
+
+                const planTestLimit = plan.testLimit;
+
+                const testLimit = await testValidationForCandidate.findOne({
+                    groupId: new ObjectId(groupId)
+                });
+
+                let noOfTestCanAttend = 0;
+                let noOfDaysToAttend = 0;
+
+                if (testLimit) {
+                    noOfTestCanAttend = testLimit.numberOfTestPerCandidate;
+                    noOfDaysToAttend = testLimit.numberOfDaysToAttend;
+                }
+
+                return successResponse('testConfig details retrieved successfully', StatusCodes.OK, {
+                    configTestNumber: noOfTestCanAttend,
+                    planTestLimit: planTestLimit,
+                    isValid: noOfTestCanAttend > planTestLimit
+                });
+            }
+            
+            return successResponse('testConfig setup', StatusCodes.OK, {
+                configTestNumber: 0,
+                planTestLimit: 0,
+                isValid: false
+            });
+
+        } catch (error: any) {
+            return createErrorResponse(
+                "Error  testConfig setup",
+                StatusCodes.INTERNAL_SERVER_ERROR,
+                error.message
+            );
+        }
+    }
     async findtestConfig(id: string): Promise<Boolean | ErrorResponse> {
         try {
             const count = await testConfigModel.countDocuments({

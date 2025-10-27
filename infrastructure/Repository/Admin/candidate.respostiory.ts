@@ -11,7 +11,7 @@ import { CandidateModel } from "../../../app/model/candidate";
 import lastInterviewDate from "../../../app/model/lastInterviewDate";
 import adminUser from "../../../app/model/admin.user";
 import { successResponse } from "../../../utils/common/commonResponse";
-import configTestLimit from "../../../app/model/config.test.limit";
+import testValidationForCandidate from "../../../app/model/config.test.limit";
 
 class CandidateRepository implements CandidateRepositoryDomain {
   private readonly db: Db
@@ -20,40 +20,41 @@ class CandidateRepository implements CandidateRepositoryDomain {
     this.db = db;
   }
 
-  async findCandidateByEmail(email: string):Promise<ApiResponse<{id:string,name:string,email:string} > | ErrorResponse>{
+  async findCandidateByEmail(email: string): Promise<ApiResponse<{ id: string, name: string, email: string }> | ErrorResponse> {
     try {
       const canidateId = await CandidateModel.findOne({
-        email:email,
-        isActive:true,
-        isDelete:false
+        email: email,
+        isActive: true,
+        isDelete: false
       })
-        
-      if(!canidateId){
-         return createErrorResponse(
-        'Error  candidate not found',
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        "Canidate not found"
-      );
+
+      if (!canidateId) {
+        return createErrorResponse(
+          'Error  candidate not found',
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          "Canidate not found"
+        );
       }
 
-        if(!canidateId.isActive){
-         return createErrorResponse(
-        'Error  candidate not in active state',
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        "Canidate not in active state"
-      );
+      if (!canidateId.isActive) {
+        return createErrorResponse(
+          'Error  candidate not in active state',
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          "Canidate not in active state"
+        );
       }
 
-       return successResponse(
+      return successResponse(
         "Candidate fetched successfully",
         StatusCodes.OK,
-        {id: canidateId?._id.toString(),
-         name: canidateId.firstName,
-         email:canidateId.email
+        {
+          id: canidateId?._id.toString(),
+          name: canidateId.firstName,
+          email: canidateId.email
         }
       );
 
-    } catch (error:any) {
+    } catch (error: any) {
       return createErrorResponse(
         'Error  candidate not found',
         StatusCodes.INTERNAL_SERVER_ERROR,
@@ -62,7 +63,7 @@ class CandidateRepository implements CandidateRepositoryDomain {
     }
   }
   async findPhNoisExistForUpdate(ph: string, userId: string, id: string, groupId: string): Promise<Boolean | ErrorResponse> {
-  try {
+    try {
       const count = await CandidateModel.countDocuments({
         groupingId: new ObjectId(groupId),
         phone: ph,
@@ -79,10 +80,11 @@ class CandidateRepository implements CandidateRepositoryDomain {
         StatusCodes.INTERNAL_SERVER_ERROR,
         error.message
       );
-    }  }
+    }
+  }
   async findPhoneNoisExist(ph: string, userId: string, groupId: string): Promise<Boolean | ErrorResponse> {
     try {
-        const count = await CandidateModel.countDocuments({
+      const count = await CandidateModel.countDocuments({
         groupingId: new ObjectId(groupId),
         phone: ph,
         isActive: true,
@@ -92,8 +94,8 @@ class CandidateRepository implements CandidateRepositoryDomain {
       console.log(count);
 
       return count == 0
-    } catch (error:any) {
-       return createErrorResponse(
+    } catch (error: any) {
+      return createErrorResponse(
         'Error  candidate ph not found',
         StatusCodes.INTERNAL_SERVER_ERROR,
         error.message
@@ -233,7 +235,7 @@ class CandidateRepository implements CandidateRepositoryDomain {
     }
   }
 
- 
+
   async findCandidateById(id: string): Promise<ApiResponse<CandidateDtls> | ErrorResponse> {
     try {
       const candidate = await CandidateModel.findById({
@@ -280,28 +282,100 @@ class CandidateRepository implements CandidateRepositoryDomain {
     }
   }
 
-  async findAllCandidate(params: ListParams, userId: string): Promise<PaginationResult<CandidateDtls[]> | ErrorResponse> {
+  async findAllCandidate(params: ListParams, userId: string, groupId: string): Promise<PaginationResult<CandidateDtls[]> | ErrorResponse> {
     try {
-
-      const { page, limit, type  } = params
+      const { page, limit, type, isValidCan } = params
 
       const matchStage: any = {
         isActive: true,
         isDelete: false,
-        createdBy: new ObjectId(userId),
+        groupingId: new ObjectId(groupId)
       };
 
-      const pipeline: any[] = [
-        { $match: matchStage },
+      if (type !== 'all') {
+        matchStage.createdBy = new ObjectId(userId);
+      }
+
+      const pipeline: any[] = []
+
+      pipeline.push({
+        $match: matchStage
+      })
+
+      const testLimit = await testValidationForCandidate.findOne({
+        groupId: new ObjectId(groupId)
+      });
+
+      let noOfTestCanAttend = 0;
+      let noOfDaysToAttend = 0;
+
+      if (testLimit) {
+        noOfTestCanAttend = testLimit.numberOfTestPerCandidate;
+        noOfDaysToAttend = testLimit.numberOfDaysToAttend;
+      }
+
+      const now = new Date();
+      const pastDate = new Date(now.getTime() - (noOfDaysToAttend * 24 * 60 * 60 * 1000));
+
+
+      pipeline.push(
         {
           $lookup: {
-            from: "admins",
-            localField: "createdBy",
-            foreignField: "_id",
-            as: "createdBy",
-          },
+            from: "lastinterviews",
+            localField: "_id",
+            foreignField: "candidates",
+            as: "candidateTestCount"
+          }
         },
+        {
+          $project: {
+            _id: 1, // Keep the candidate's _id
+            candidateTestCount: {
+              $filter: {
+                input: "$candidateTestCount", // The array of test records
+                as: "test",
+                cond: { $gte: ["$$test.createdAt", pastDate] } // Filter tests within the valid time window
+              }
+            }
+          }
+        },
+        {
+          $addFields: {
+            recentTestCount: { $size: "$candidateTestCount" }, // Count how many tests attended in the valid date range
+            remainingTestCount: {
+              $subtract: [noOfTestCanAttend, { $size: "$candidateTestCount" }] // Calculate remaining tests
+            }
+          }
+        },
+        {
+          $addFields: {
+            isValid: {
+              $gt: ["$remainingTestCount", 0] // Check if remaining test count is non-negative
+            }
+          }
+        },
+      )
 
+      if (isValidCan == "valid") {
+        pipeline.push({
+          $match: { isValid: true }
+        });
+      }
+
+      if (isValidCan == "invalid") {
+        pipeline.push({
+          $match: { isValid: false }
+        });
+      }
+
+      pipeline.push({
+        $lookup: {
+          from: "admins",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+        },
+      },
         {
           $lookup: {
             from: "admins",
@@ -310,26 +384,29 @@ class CandidateRepository implements CandidateRepositoryDomain {
             as: "modifiedBy",
           },
         },
+      )
 
-        // Project
-        {
-          $project: {
-            _id: 1,
-            firstName: 1,
-            lastName: 1,
-            email: 1,
-            phone: 1,
-            // Flags
-            isActive: 1,
-            isDelete: 1,
-            createdBy: { $arrayElemAt: ['$createdBy.name', 0] },
-            modifiedBy: { $arrayElemAt: ['$modifiedBy.name', 0] },
-            // Timestamps
-            createdAt: 1,
-            updatedAt: 1,
-          },
+
+      pipeline.push({
+        $project: {
+          _id: 1,
+          firstName: 1,
+          lastName: 1,
+          email: 1,
+          phone: 1,
+          // Flags
+          isActive: 1,
+          isDelete: 1,
+          createdBy: { $arrayElemAt: ['$createdBy.name', 0] },
+          modifiedBy: { $arrayElemAt: ['$modifiedBy.name', 0] },
+          // Timestamps
+          createdAt: 1,
+          updatedAt: 1,
+          recentTestCount: 1,
+          remainingTestCount: 1,
+          isValid: 1
         },
-      ];
+      },)
 
       if (type !== 'all') {
         pipeline.push(
@@ -351,10 +428,8 @@ class CandidateRepository implements CandidateRepositoryDomain {
     }
   }
 
-   async createCandidate(validatedData: CreatecandidateInput, userId: string, groupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
+  async createCandidate(validatedData: CreatecandidateInput, userId: string, groupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
     try {
-    
-
       // Form candidate object explicitly
       const candidateObj: any = {
         firstName: validatedData.firstName,
@@ -362,7 +437,7 @@ class CandidateRepository implements CandidateRepositoryDomain {
         lastName: validatedData.lastName || "",
         email: validatedData.email,
         phone: validatedData.phone || "",
-        createdBy:new ObjectId(userId),
+        createdBy: new ObjectId(userId),
         modifiedBy: null,
         groupingId: new ObjectId(groupId)
       };

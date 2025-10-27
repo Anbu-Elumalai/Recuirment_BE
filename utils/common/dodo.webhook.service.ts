@@ -46,6 +46,7 @@ router.post(
           break;
 
         case DodoEventType.SUBSCRIPTION_SUCCEEDED:
+        case DodoEventType.PAYMENT_SUCCEEDED:
           update = { subscriptionStatus: "succeeded" };
           break;
 
@@ -55,14 +56,14 @@ router.post(
 
         case DodoEventType.SUBSCRIPTION_ON_HOLD:
           update = {
-            subscriptionStatus: "hold"
-            , hold_started_at: new Date(),
-            hold_reason: " need to implement"
+            subscriptionStatus: "on_hold",
+            hold_started_at: new Date(),
+            hold_reason: event.data?.reason || "unknown"
           };
-
           break;
 
         case DodoEventType.SUBSCRIPTION_CANCELLED:
+        case DodoEventType.PAYMENT_CANCELLED:
           update = { subscriptionStatus: "cancelled" };
           break;
 
@@ -74,10 +75,13 @@ router.post(
           update = { subscriptionStatus: "expired" };
           break;
 
-        default:
-          console.log("eventType log", eventType);
+        case DodoEventType.PAYMENT_FAILED:
+          update = { subscriptionStatus: "failed" };
+          break;
 
-          update = { subscriptionStatus: eventType };
+        default:
+          console.log("Unknown eventType:", eventType);
+          update = { subscriptionStatus: "unknown" };
       }
 
 
@@ -100,11 +104,11 @@ router.post(
         type: event.type,
         timestamp: event.timestamp,
         payload_type: event.data.payload_type || "Subscription",
-        error_code:event.data.error_code ?? "",
-        error_message:event.data.error_message ?? "",
+        error_code: event.data.error_code ?? "",
+        error_message: event.data.error_message ?? "",
       };
 
-     const subscription= await SubscriptionModel.updateOne(
+      const subscription = await SubscriptionModel.updateOne(
         { subscription_id: subscriptionData.subscription_id }, // filter by subscription_id
         { $set: subscriptionData }, // set updated data
         { upsert: true } // insert if not found

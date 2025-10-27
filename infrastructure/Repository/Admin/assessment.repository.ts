@@ -19,6 +19,7 @@ import Types from "mongodb"
 import { QuestionModel } from "../../../app/model/question";
 import lastInterviewDate from "../../../app/model/lastInterviewDate";
 import { AssessAnsInput, AssessmentSubmitionSchema } from "../../../api/Request/questionAns";
+import subscription from "../../../app/model/subscription";
 class AssessmentRepository implements AssRepositoryDomain {
     private readonly db: Db
 
@@ -27,6 +28,99 @@ class AssessmentRepository implements AssRepositoryDomain {
     }
     async createAssessment(data: CreateassessmentInput, userId: string, groupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
         try {
+
+            const currentDate = new Date();
+
+            const currentPlanDetails = await subscription.findOne({
+                'metadata.groupId': new ObjectId(groupId), // filter by group
+                status: { $in: ['active', 'renewed'] },                  // active or renewed subscription
+                next_billing_date: { $gte: currentDate }
+            })
+                .populate('metadata.planId')
+                .sort({ next_billing_date: -1 });
+
+
+            if (currentPlanDetails && currentPlanDetails.metadata?.planId) {
+
+                const plan = currentPlanDetails.metadata!.planId as any;
+                const dur = plan.duration
+                const candidateLimit = plan.candidateLimit;
+
+                const nextBillingDate = currentPlanDetails.next_billing_date!;
+                let fromDate: Date;
+
+                fromDate = new Date(nextBillingDate);
+
+                if (dur == "monthly") {
+                    fromDate.setMonth(fromDate.getMonth() - 1);
+                } else if (dur == 'yearly') {
+                    fromDate.setFullYear(fromDate.getFullYear() - 1);
+                } else {
+                    return createErrorResponse(
+                        "Error",
+                        StatusCodes.BAD_REQUEST,
+                        "Subcription period is not found"
+                    );
+                }
+
+
+                const assessments = await lanchAssessment.find({
+                    groupingId: new ObjectId(groupId),
+                    isActive: true,
+                    isDelete: false,
+                    createdAt: {
+                        $gte: fromDate,
+                        $lte: nextBillingDate
+                    }
+                });
+
+                // Get all group candidate IDs from assessments
+                const groupCandidateIds = assessments.map(e => e.groupCandidateId);
+
+                // Remove duplicates
+                const uniqueGrpCandId = Array.from(new Set(groupCandidateIds));
+
+                // Fetch group details for these IDs
+                const groupCandiDtls = await group.find({
+                    _id: { $in: uniqueGrpCandId }
+                });
+
+                // ⚠️ Use canidateId as defined in your schema
+                const grpCandidateIds = groupCandiDtls.flatMap(e => e.canidateId);
+
+                // Extract candidate IDs from assessments (flattened)
+                const assCandIds = assessments.flatMap(e => e.candidateIds);
+
+                // Combine and get unique
+                const final = [...grpCandidateIds, ...assCandIds];
+                const uniqueCanIds = Array.from(new Set(final));
+
+                console.log("Unique Candidate Count:", uniqueCanIds.length);
+
+                if (uniqueCanIds.length > candidateLimit) {
+                    return createErrorResponse(
+                        "Error",
+                        StatusCodes.BAD_REQUEST,
+                        "Unique Candidate limit exceeded for this plan"
+                    );
+                }
+
+               
+
+                if(data.candidateIds){
+                     data.candidateIds.filter((e)=> 
+                       uniqueCanIds.map((exist)=> e !== exist)
+                    )
+                }
+
+            } else {
+                return createErrorResponse(
+                    "Error",
+                    StatusCodes.BAD_REQUEST,
+                    "Active subscription plan not found"
+                );
+            }
+
 
             const obj = {
                 assessmentName: data.name,

@@ -8,13 +8,14 @@ export interface ListParams {
     search: string;
     sort: 'asc' | 'desc';
     type:string,
+    isValidCan:string
 }
 export interface CandidateRepositoryDomain{
     createCandidate(data: CreatecandidateInput , userId: string,groupId : string): Promise<ApiResponse<SuccessMessage> | ErrorResponse>;
     findAdminOrganization(id: string): Promise<{ origanizationType: string; statusCode: number } | ErrorResponse>;
     findCandidateById(id: string): Promise<ApiResponse<CandidateDtls> | ErrorResponse>;
     findLastInterviews(id: string): Promise<{ count: number; statusCode: number } | ErrorResponse>;
-    findAllCandidate(params: ListParams, userId: string): Promise<PaginationResult<CandidateDtls[]> | ErrorResponse>;
+    findAllCandidate(params: ListParams, userId: string, groupId: string): Promise<PaginationResult<CandidateDtls[]> | ErrorResponse>;
     updateCandidate( data: UpdatecandidateInput,id:string, userId:string ,groupId : string): Promise<ApiResponse<SuccessMessage> | ErrorResponse>;
     deleteCandidate(id:string, userId:string): Promise<ApiResponse<SuccessMessage> | ErrorResponse>;
     findCandidateIdExist(id: string): Promise<Boolean | ErrorResponse>
@@ -29,7 +30,7 @@ export interface CandidateRepositoryDomain{
 export interface CandidateServiceDomain{
     createCandidate(data: CreatecandidateInput , userId: string,groupId : string): Promise<ApiResponse<SuccessMessage> | ErrorResponse>;
     findCandidateById(id: string): Promise<ApiResponse<CandidateDtls> | ErrorResponse>;
-    findAllCandidate(params: ListParams, userId: string): Promise<PaginationResult<CandidateDtls[]> | ErrorResponse>;
+    findAllCandidate(params: ListParams, userId: string, groupId: string): Promise<PaginationResult<CandidateDtls[]> | ErrorResponse>;
     updateCandidate(data: UpdatecandidateInput,id:string, userId:string,groupId : string): Promise<ApiResponse<SuccessMessage> | ErrorResponse>;
     deleteCandidate(id:string, userId:string): Promise<ApiResponse<SuccessMessage> | ErrorResponse>;
     findCandidateByEmail(email: string):Promise<ApiResponse<{id:string,name:string,email:string} > | ErrorResponse>
