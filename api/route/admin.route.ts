@@ -31,6 +31,7 @@ import { NewDODOPayRepositoryRegister } from "../../infrastructure/Repository/Ad
 import { RegisterDodoPayRoute } from "./admin/dodopay.route";
 import { NewtestConfigRrpository } from "../../infrastructure/Repository/Admin/test.config.repository";
 import { RegistertestConfigRoute } from "./admin/test.config.route";
+import {newHistoryTrackRegister} from "../../utils/common/history.tracking.service"
 
 export function setupRoutes(router: Router, db: Db) {
 
@@ -38,7 +39,10 @@ export function setupRoutes(router: Router, db: Db) {
 
   const adminAuthService = AdminAuthMiddlewareService(adminRepo)
   const adminmiddleware = NewAdminAuthRegister(adminAuthService)
-
+   
+  //History tracking service
+  newHistoryTrackRegister(db)
+  
   const roleRepo = NewroleRrpository(db)
   const groupREpo = NewgroupRrpository(db)
   const candidateRepo = NewCandidateRrpository(db)

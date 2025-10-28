@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { AdminServiceDomain } from "../../../domain/admin/adminDomain";
 import { createAdminSchema, loginAdminSchema, forgotPasswordSchema, resetPasswordSchema, changePasswordSchema, CreateAdminInput, LoginAdminInput, ForgotPasswordInput, ResetPasswordInput, ChangePasswordInput } from "../../../api/Request/admin";
 import { StatusCodes } from "http-status-codes";
+import { logUserActivity } from "../../../utils/utilsFunctions/user.activity";
 
 export class AdminUserHandler {
   private userService: AdminServiceDomain;
@@ -33,11 +34,15 @@ export class AdminUserHandler {
       if (!parsed.success) {
         return res.status(StatusCodes.BAD_REQUEST).json({ errors: parsed.error.issues  });
       }
+     
       const data: LoginAdminInput = parsed.data;
       const result = await this.userService.loginAdmin(data);
       if (result.status === "error") {
         return res.status(StatusCodes.UNAUTHORIZED).json(result);
       }
+
+      await logUserActivity(result.data.user.id,req,result.data.user.name, "login"  )
+
       return res.status(StatusCodes.OK).json(result);
     } catch (err: any) {
       return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: err.message });

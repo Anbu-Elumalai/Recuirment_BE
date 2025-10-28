@@ -202,15 +202,15 @@ class AdminUserRepository implements IAdminRepository {
 
       await admin.save();
 
-     const newTestConfig = await testValidationForCandidate.create({
-      numberOfTestsPerCandidate: 1,
-      numberOfDaysToAttend: 3,
-      groupingId:new ObjectId(grouping._id), // Replace with actual grouping ID
-      createdBy:new ObjectId(admin._id) , // Replace with actual admin ID
-      isActive: true, // Optional, default is true
-    });
+      const newTestConfig = await testValidationForCandidate.create({
+        numberOfTestsPerCandidate: 1,
+        numberOfDaysToAttend: 3,
+        groupingId: new ObjectId(grouping._id), // Replace with actual grouping ID
+        createdBy: new ObjectId(admin._id), // Replace with actual admin ID
+        isActive: true, // Optional, default is true
+      });
 
-    console.log('New Test Config Created:', newTestConfig);
+      console.log('New Test Config Created:', newTestConfig);
 
       const adminUser: AdminUser = {
         id: admin._id.toString(),
@@ -270,14 +270,21 @@ class AdminUserRepository implements IAdminRepository {
         _config?.JwtSecretKey,
         { expiresIn: _config.TokenDuration }
       );
-      // Upsert token in admintokens
-      const existing = await AdminToken.findOne({ adminId: adminExist._id });
-      if (existing) {
-        existing.token = token;
-        await existing.save();
-      } else {
-        await AdminToken.create({ adminId: adminExist._id, token });
-      }
+
+      // Deactivate old tokens
+      await AdminToken.updateMany(
+        { adminId: adminExist._id, isActive: true },
+        { $set: { isActive: false } }
+      );
+
+      // Create new token
+      await AdminToken.create({
+        adminId: adminExist._id,
+        token,
+        isActive: true,
+        loginTime: new Date(),
+      });
+
       const user: AdminUser = {
         id: adminExist._id.toString(),
         permissions: adminExist.permissions,

@@ -258,3 +258,24 @@ export enum SubscriptionStatus {
   Failed = "failed",
   Expired = "expired",
 }
+
+export enum ModalName {
+  AdminModel = 'admins',
+  CandidateModel = 'candidates',
+  CandidateTypeModel = 'candidatetypes',
+  CategoriesModel = 'categories',
+  TestValidationForCandidateModel='testvalidationforacndidates',
+  ForgotpasswordsModel='forgotpasswords',
+  CandidateGroupsModel='candidategroups',
+  AssessmentLanchModel='assessmentlanchs',
+  LastInterviewsModel='lastinterviews',
+  GroupingidModel='groupingids',
+  PlansModel='plans',
+  QuestionGroupsModel='questiongroups',
+  QuestionModel ='questions',
+  RoleModel='roles',
+  SkillModel='skills',
+  SubscriptionsModel='subscriptions',
+  JobapplicationsModel='jobapplications',
+  TransactionsModel='transactions'
+}

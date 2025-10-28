@@ -11,6 +11,7 @@ import { createErrorResponse } from "../../../utils/common/errors";
 import testConfigModel from "../../../app/model/config.test.limit";
 import subscription from "../../../app/model/subscription";
 import testValidationForCandidate from "../../../app/model/config.test.limit";
+import planMode from "../../../app/model/plan.mode";
 
 /**
  * Repository class for handling testConfig-related database operations
@@ -58,7 +59,7 @@ class testConfigRepository implements testConfigDomainRepository {
                     isValid: noOfTestCanAttend > planTestLimit
                 });
             }
-            
+
             return successResponse('testConfig setup', StatusCodes.OK, {
                 configTestNumber: 0,
                 planTestLimit: 0,
@@ -127,8 +128,34 @@ class testConfigRepository implements testConfigDomainRepository {
         }
     }
 
-    async updatetestConfig(testConfigInput: UpdatetestConfigInput, userId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
+    async updatetestConfig(testConfigInput: UpdatetestConfigInput, userId: string, groupId: string): Promise<ApiResponse<SuccessMessage> | ErrorResponse> {
         try {
+
+            const currentDate = new Date();
+
+            const currentPlanDetails = await subscription.findOne({
+                'metadata.groupId': new ObjectId(groupId), // filter by group
+                status: { $in: ['active', 'renewed'] }, // active or renewed subscription
+                next_billing_date: { $gte: currentDate }
+            })
+                .populate('metadata.planId')
+                .sort({ next_billing_date: -1 });
+
+            
+            if (currentPlanDetails && currentPlanDetails.metadata?.planId) {
+                const plan = currentPlanDetails.metadata!.planId as any;
+                const dur = plan.duration;
+                const planTestLimit = plan.testLimit
+
+                if (testConfigInput.numberOfTestsPerCandidate > planTestLimit) {
+                      return createErrorResponse(
+                        'Error.TestConfig test limit is greater than of current plan',
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        'Error.TestConfig test limit is greater than of current plan',
+                    );
+                }
+            }
+
             const input = {
                 numberOfDaysToAttend: testConfigInput.numberOfDaysToAttend,
                 numberOfTestsPerCandidate: testConfigInput.numberOfTestsPerCandidate,

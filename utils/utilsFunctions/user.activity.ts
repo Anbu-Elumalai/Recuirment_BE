@@ -1,10 +1,10 @@
-import { ObjectId } from 'mongoose';
-// import UserActivityLog from '../../app/model/user.activity';
+import UserActivityLog from '../../app/model/userActivity';
 import { Request } from 'express';
-import { string } from 'zod';
-import  CountryCode, { SubscriptionStatus }  from "../common/enum"
+import { ObjectId } from "mongodb";
 
-export const logUserActivity = async (userId: any,
+import CountryCode, { SubscriptionStatus } from "../common/enum"
+
+export const logUserActivity = async (userId: string,
     req: Request,
     userName: string,
     actionPerformed: string
@@ -18,23 +18,20 @@ export const logUserActivity = async (userId: any,
         const userAgent = req.headers['user-agent'] || '';
         const deviceUsed = getDeviceUsed(userAgent);
 
-        // const logEntry = new UserActivityLog({
-        //     userName,
-        //     actionPerformed,
-        //     dateTime: new Date(),
-        //     ipAddress,
-        //     deviceUsed,
-        //     userId
-        // });
-        // await logEntry.save();
-        // const log = new UserActivityLog();
-        // log.userName = userName;
-        // log.actionPerformed = actionPerformed;
-        // log.ipAddress = ipAddress ?? '';
-        // log.deviceUsed = deviceUsed;
-        // log.userId = new ObjectId(userId)
-        console.log('User activity recorded.');
-    } catch (err) {
+       const logEntry = new UserActivityLog({
+        userName,
+        actionPerformed,
+        dateTime: new Date(),
+        ipAddress,
+        deviceUsed,
+        userId: new ObjectId(userId) 
+    });
+
+    await logEntry.save();
+
+    console.log('User activity recorded.');
+
+} catch (err) {
         console.error('Error logging user activity:', err);
     }
 };
@@ -62,7 +59,7 @@ const getDeviceUsed = (userAgent: string): string => {
 };
 
 //Country Code Mapping
-export const getCountryCode =async (countryCode: string):Promise< CountryCode | null> => {
+export const getCountryCode = async (countryCode: string): Promise<CountryCode | null> => {
     switch (countryCode) {
         case "AF":
             return CountryCode.Afghanistan
@@ -565,21 +562,21 @@ export const getCountryCode =async (countryCode: string):Promise< CountryCode | 
     }
 }
 export const getSubscriptionStatusMessage = async (status: string): Promise<SubscriptionStatus | null> => {
-  switch (status) {
-    case SubscriptionStatus.Pending:
-      return SubscriptionStatus.Pending;
-    case SubscriptionStatus.Active:
-      return SubscriptionStatus.Active
-    case SubscriptionStatus.OnHold:
-      return SubscriptionStatus.OnHold
-    case SubscriptionStatus.Cancelled:
-      return SubscriptionStatus.Cancelled
-    case SubscriptionStatus.Failed:
-      return SubscriptionStatus.Failed
-    case SubscriptionStatus.Expired:
-      return SubscriptionStatus.Expired
-    default:
-      return null;
-  }
+    switch (status) {
+        case SubscriptionStatus.Pending:
+            return SubscriptionStatus.Pending;
+        case SubscriptionStatus.Active:
+            return SubscriptionStatus.Active
+        case SubscriptionStatus.OnHold:
+            return SubscriptionStatus.OnHold
+        case SubscriptionStatus.Cancelled:
+            return SubscriptionStatus.Cancelled
+        case SubscriptionStatus.Failed:
+            return SubscriptionStatus.Failed
+        case SubscriptionStatus.Expired:
+            return SubscriptionStatus.Expired
+        default:
+            return null;
+    }
 };
 

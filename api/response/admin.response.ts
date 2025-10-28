@@ -1,5 +1,5 @@
 export interface AdminUser {
-    id?: string;
+    id: string;
     name: string;
     email: string;
     isActive: boolean;

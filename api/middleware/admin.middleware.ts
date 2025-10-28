@@ -1,3 +1,4 @@
+import AdminToken from "../../app/model/admin.token";
 import { _config } from "../../config/config";
 import { AuthMiddlewareDomain } from "../../domain/auth/auth.middleware";
 import { Request, Response, NextFunction } from "express";
@@ -40,6 +41,17 @@ class AdminAuthMiddleware {
         return;
       }
 
+      const findTokenIsValid= await AdminToken.findOne({token: token , isActive: true})
+
+      if(!findTokenIsValid){
+          res
+          .status(500)
+          .json({
+            message: "Token is not valid",
+          });
+        return;
+      }
+      
       const decoded: any = jwt.verify(token, _config.JwtSecretKey);
       const userDtls = await this.auths.authumiddleware(decoded?.email);
 
