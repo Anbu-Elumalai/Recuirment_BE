@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Subscription Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2d87f0;
+            margin-bottom: 10px;
+        }
+        p {
+            line-height: 1.6;
+            color: #333;
+        }
+        .status {
+            font-weight: bold;
+        }
+        .status.active { color: green; }
+        .status.succeeded { color: blue; }
+        .status.renewed { color: blue; }
+        .status.on_hold { color: orange; }
+        .status.cancelled { color: red; }
+        .status.failed { color: red; }
+        .status.plan_changed { color: blue; }
+        .status.expired { color: gray; }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            margin-top: 20px;
+            background-color: #2d87f0;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .info-table th, .info-table td {
+            text-align: left;
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        .info-table th {
+            width: 150px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hello <%= name %>,</h1>
+
+        <p>Your subscription status has been updated:</p>
+        <p>Status: <span class="status <%= subscriptionStatus %>"><%= subscriptionStatus.replace("_", " ").toUpperCase() %></span></p>
+
+        <% if(planName) { %>
+        <table class="info-table">
+            <tr>
+                <th>Plan Name</th>
+                <td><%= planName %></td>
+            </tr>
+            <% if(startDate) { %>
+            <tr>
+                <th>Start Date</th>
+                <td><%= startDate %></td>
+            </tr>
+            <% } %>
+            <% if(endDate) { %>
+            <tr>
+                <th>End Date</th>
+                <td><%= endDate %></td>
+            </tr>
+            <% } %>
+            <% if(nextPaymentDate) { %>
+            <tr>
+                <th>Next Payment</th>
+                <td><%= nextPaymentDate %></td>
+            </tr>
+            <% } %>
+        </table>
+        <% } %>
+
+        <% if(reason && reason !== "") { %>
+            <p><strong>Reason:</strong> <%= reason %></p>
+        <% } %>
+
+        <% if(subscriptionStatus === "failed" || subscriptionStatus === "cancelled") { %>
+            <a href="<%= manageLink %>" class="btn">Resolve / Renew Subscription</a>
+        <% } else { %>
+            <a href="<%= manageLink %>" class="btn">Manage Subscription</a>
+        <% } %>
+
+        <div class="footer">
+            &copy; <%= new Date().getFullYear() %> Your Company. All rights reserved.<br>
+            If you did not perform this action, please contact support immediately.
+        </div>
+    </div>
+</body>
+</html>

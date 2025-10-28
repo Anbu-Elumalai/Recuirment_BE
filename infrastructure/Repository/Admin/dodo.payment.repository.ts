@@ -80,7 +80,8 @@ class dodopayments implements DODOpaymentDomainRepository{
                     userId: userId.toString(),
                     planId: data.planId.toString(),
                     groupId: groupId.toString(),
-                    transactionId: transaction._id.toString()
+                    transactionId: transaction._id.toString(),
+                    planName: data.name
                 },
             };
 
@@ -97,7 +98,6 @@ class dodopayments implements DODOpaymentDomainRepository{
                 expiresOn: resp.data.expires_on,
                 recurringPreTaxAmount: resp.data.recurring_pre_tax_amount
             });
-
 
             return successResponse("", StatusCodes.OK, {
                 success: true,
