@@ -56,7 +56,7 @@ class dodopayments implements DODOpaymentDomainRepository{
             await transaction.save();
 
             const obj = {
-                product_id: 'pdt_OKYujFYRxFJF2BJjzV5vv', // findDodoProductID.dodoProductId,
+                product_id:findDodoProductID.dodoProductId,
                 quantity: 1,
                 billing: {
                     city: data.billing.city,
